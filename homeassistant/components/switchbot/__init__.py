@@ -172,6 +172,7 @@ PLATFORMS_BY_TYPE = {
     SupportedModels.EVAPORATIVE_HUMIDIFIER.value: [
         Platform.HUMIDIFIER,
         Platform.SENSOR,
+        Platform.SWITCH,
     ],
     SupportedModels.FLOOR_LAMP.value: [Platform.LIGHT, Platform.SENSOR],
     SupportedModels.STRIP_LIGHT_3.value: [Platform.LIGHT, Platform.SENSOR],

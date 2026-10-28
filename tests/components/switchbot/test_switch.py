@@ -15,7 +15,7 @@ from homeassistant.components.switch import (
     SERVICE_TURN_ON,
     STATE_ON,
 )
-from homeassistant.const import ATTR_ENTITY_ID
+from homeassistant.const import ATTR_ENTITY_ID, STATE_OFF
 from homeassistant.core import HomeAssistant, State
 from homeassistant.exceptions import HomeAssistantError
 
@@ -25,6 +25,7 @@ from . import (
     AIR_PURIFIER_TABLE_US_SERVICE_INFO,
     AIR_PURIFIER_US_SERVICE_INFO,
     CIRCULATOR_FAN_PRO_SERVICE_INFO,
+    EVAPORATIVE_HUMIDIFIER_SERVICE_INFO,
     PLUG_MINI_EU_SERVICE_INFO,
     RELAY_SWITCH_1_SERVICE_INFO,
     RELAY_SWITCH_2PM_SERVICE_INFO,
@@ -495,3 +496,45 @@ async def test_circulator_fan_pro_vertical_oscillation_switch(
         )
 
         mocked_instance.assert_awaited_once_with(expected_arg)
+
+
+@pytest.mark.parametrize(
+    ("service", "expected_arg"),
+    [
+        (SERVICE_TURN_ON, True),
+        (SERVICE_TURN_OFF, False),
+    ],
+)
+async def test_evaporative_humidifier_child_lock_switch(
+    hass: HomeAssistant,
+    mock_entry_encrypted_factory: Callable[[str], MockConfigEntry],
+    service: str,
+    expected_arg: bool,
+) -> None:
+    """Test the Evaporative Humidifier child lock switch."""
+    inject_bluetooth_service_info(hass, EVAPORATIVE_HUMIDIFIER_SERVICE_INFO)
+
+    entry = mock_entry_encrypted_factory(sensor_type="evaporative_humidifier")
+    entry.add_to_hass(hass)
+
+    mocked_set_child_lock = AsyncMock(return_value=True)
+    with patch.multiple(
+        "homeassistant.components.switchbot.switch.switchbot.SwitchbotEvaporativeHumidifier",
+        update=AsyncMock(return_value=None),
+        set_child_lock=mocked_set_child_lock,
+    ):
+        assert await hass.config_entries.async_setup(entry.entry_id)
+        await hass.async_block_till_done(wait_background_tasks=True)
+
+        state = hass.states.get("switch.test_name_child_lock")
+        assert state is not None
+        assert state.state == STATE_OFF
+
+        await hass.services.async_call(
+            SWITCH_DOMAIN,
+            service,
+            {ATTR_ENTITY_ID: "switch.test_name_child_lock"},
+            blocking=True,
+        )
+
+        mocked_set_child_lock.assert_awaited_once_with(expected_arg)
