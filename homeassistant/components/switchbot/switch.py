@@ -67,6 +67,17 @@ CIRCULATOR_FAN_PRO_SWITCHES: tuple[SwitchbotSwitchEntityDescription, ...] = (
     ),
 )
 
+EVAPORATIVE_HUMIDIFIER_SWITCHES: tuple[SwitchbotSwitchEntityDescription, ...] = (
+    SwitchbotSwitchEntityDescription(
+        key="child_lock",
+        translation_key="child_lock",
+        device_class=SwitchDeviceClass.SWITCH,
+        is_on_fn=lambda device: device.is_child_lock_enabled(),
+        turn_on_fn=lambda device: device.set_child_lock(True),
+        turn_off_fn=lambda device: device.set_child_lock(False),
+    ),
+)
+
 PARALLEL_UPDATES = 0
 _LOGGER = logging.getLogger(__name__)
 
@@ -110,6 +121,11 @@ async def async_setup_entry(
         async_add_entities(
             SwitchbotGenericSwitch(coordinator, desc)
             for desc in CIRCULATOR_FAN_PRO_SWITCHES
+        )
+    elif isinstance(coordinator.device, switchbot.SwitchbotEvaporativeHumidifier):
+        async_add_entities(
+            SwitchbotGenericSwitch(coordinator, desc)
+            for desc in EVAPORATIVE_HUMIDIFIER_SWITCHES
         )
     else:
         async_add_entities([SwitchBotSwitch(coordinator)])
